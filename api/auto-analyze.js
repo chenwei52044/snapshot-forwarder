@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import strategyPrompt from '../lib/xtc_prompt.js'; // ⬅️ 引入策略模型
+import strategyPrompt from '../lib/xtc_prompt.js'; // 引入小天才策略 prompt
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   }
 
   const snapshot = req.body;
-  console.log("📦 小天才收到快照，准备分析:", snapshot);
+  console.log("\u{1F4E6} 小天才收到快照，准备分析:", snapshot);
 
   try {
     const chatCompletion = await openai.chat.completions.create({
@@ -19,7 +19,7 @@ export default async function handler(req, res) {
       messages: [
         {
           role: 'system',
-          content: strategyPrompt  // ⬅️ 使用外部定义的完整策略
+          content: strategyPrompt // 使用记忆系统策略
         },
         {
           role: 'user',
@@ -45,7 +45,12 @@ export default async function handler(req, res) {
       body: JSON.stringify(result)
     });
 
-    console.log("✅ 小天才分析完成:", result);
+    if (summary && summary !== '⚠️ GPT 没有返回内容') {
+      console.log("\u{2705} 小天才分析完成:", result);
+    } else {
+      console.warn("⚠️ GPT 分析返回为空:", result);
+    }
+
     return res.status(200).json(result);
   } catch (err) {
     console.error("❌ 分析失败:", err.message);
