@@ -13,23 +13,25 @@ export default async function handler(req, res) {
   const snapshot = req.body;
   console.log("📩 小天才收到快照，准备分析:", snapshot);
 
-  // ✅ 判断是否是合并结构（同时包含多个币种的快照）
+  // ✅ 判断是否是合并结构（必须包含至少一个币种）
   if (!(snapshot.BTCUSDT || snapshot.ETHUSDT || snapshot.SOLUSDT)) {
     console.error("❌ 快照不是合并结构，拒绝执行");
     return res.status(400).json({ error: 'Invalid snapshot structure' });
   }
 
+  // 📦 加载策略 prompt
   let strategyPrompt = '';
   try {
     strategyPrompt = getStrategyPrompt();
   } catch (e) {
-    console.error("❌ 加载策略记忆失败:", e.message);
+    console.error("❌ 加载策略记忆失败:", e);
     return res.status(500).json({ error: '无法读取策略记忆', detail: e.message });
   }
 
+  // 🤖 请求 GPT 分析
   try {
     const chatCompletion = await openai.chat.completions.create({
-      model: 'gpt-4o', // 你也可以用 'gpt-4'
+      model: 'gpt-4o',
       messages: [
         { role: 'system', content: strategyPrompt },
         {
@@ -40,28 +42,16 @@ export default async function handler(req, res) {
     });
 
     const summary = chatCompletion.choices?.[0]?.message?.content || '⚠️ GPT 没有返回内容';
+    console.log("✅ 小天才分析完成:", summary.slice(0, 100) + '...');
 
-    const result = {
+    return res.status(200).json({
       summary,
       timestamp: new Date().toISOString(),
-      raw: {
-        ...snapshot,
-        gpt_output: summary
-      }
-    };
-
-    await fetch(process.env.RECEIVER_URL || 'https://snapshot-forwarder.vercel.app/api/receive-analysis', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(result)
+      snapshot
     });
 
-    console.log("✅ 小天才分析完成:", summary.slice(0, 120) + '...');
-    return res.status(200).json(result);
-
   } catch (err) {
-    console.error("❌ 分析失败:", err.message);
+    console.error("❌ GPT 分析失败:", err);
     return res.status(500).json({ error: '分析失败', detail: err.message });
   }
 }
-
