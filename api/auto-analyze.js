@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
-import { getStrategyPrompt } from '../lib/brainLoader.js'; // ✅ 引入策略模块
+import { getStrategyPrompt } from '../../lib/brainLoader.js'; // 注意路径是否在 /pages/api 中
+import path from 'path'; // 🔧 确保导入了 path，防止 ReferenceError
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -15,13 +16,6 @@ export default async function handler(req, res) {
 
   const strategyPrompt = getStrategyPrompt();
 
-  // 👉 将 snapshot 格式化成 Markdown 代码块
-  const formattedSnapshot = `以下是账户当前快照，请基于策略规则输出结构化操作建议：
-\`\`\`json
-${JSON.stringify(snapshot, null, 2)}
-\`\`\`
-`;
-
   try {
     const chatCompletion = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -32,7 +26,9 @@ ${JSON.stringify(snapshot, null, 2)}
         },
         {
           role: 'user',
-          content: formattedSnapshot
+          content: `请基于策略记忆与以下账户快照，生成结构化操作建议（包含持仓分析 + 盈亏状态 + 是否止盈/止损 + 操作指令清单 + 逻辑说明）。禁止使用 markdown 符号。
+
+${JSON.stringify(snapshot)}`
         }
       ]
     });
@@ -48,22 +44,18 @@ ${JSON.stringify(snapshot, null, 2)}
       }
     };
 
-    // ✅ 发回分析结果
     await fetch(process.env.RECEIVER_URL || 'https://snapshot-forwarder.vercel.app/api/receive-analysis', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(result)
     });
 
-    console.log("✅ 小天才分析完成:", result);
+    console.log("✅ 小天才分析完成:", result.summary.slice(0, 120) + '...');
     return res.status(200).json(result);
-  } catch (err) {
-    console.error("❌ 分析失败:", err.message);
 
-    return res.status(500).json({
-      error: '分析失败',
-      detail: err.message,
-      debugHint: '可能是 prompt 中 JSON 格式错误或模型响应结构变化'
-    });
+  } catch (err) {
+    console.error("❌ 分析失败:", err.message, err.stack);
+    return res.status(500).json({ error: '分析失败', detail: err.message });
   }
 }
+
