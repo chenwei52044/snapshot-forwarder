@@ -1,18 +1,16 @@
-import OpenAI from 'openai';
-import { getStrategyPrompt } from '../lib/brainLoader.js';
-
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const snapshot = req.body;
-  console.log("📦 小天才收到快照，准备分析:", snapshot);
+  console.log("📩 小天才收到快照，准备分析:", snapshot);
+
+  // ✅ 判断是否是整合后的快照结构（放在函数内部）
+  if (!(snapshot.BTCUSDT || snapshot.ETHUSDT || snapshot.SOLUSDT)) {
+    console.error("❌ 快照不是合并结构，拒绝执行");
+    return res.status(400).json({ error: 'Invalid snapshot structure' });
+  }
 
   let strategyPrompt = '';
   try {
@@ -59,3 +57,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: '分析失败', detail: err.message });
   }
 }
+
