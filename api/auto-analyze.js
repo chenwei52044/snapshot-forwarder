@@ -13,7 +13,14 @@ export default async function handler(req, res) {
   const snapshot = req.body;
   console.log("📦 小天才收到快照，准备分析:", snapshot);
 
-  const strategyPrompt = getStrategyPrompt(); // ✅ 从记忆动态生成
+  const strategyPrompt = getStrategyPrompt();
+
+  // 👉 将 snapshot 格式化成 Markdown 代码块
+  const formattedSnapshot = `以下是账户当前快照，请基于策略规则输出结构化操作建议：
+\`\`\`json
+${JSON.stringify(snapshot, null, 2)}
+\`\`\`
+`;
 
   try {
     const chatCompletion = await openai.chat.completions.create({
@@ -25,9 +32,7 @@ export default async function handler(req, res) {
         },
         {
           role: 'user',
-          content: `以下是账户当前快照，请基于策略规则给出结构化操作建议（持仓分析 + 盈亏状态 + 是否止盈/止损 + 操作建议 + 逻辑说明）：
-
-${JSON.stringify(snapshot)}`
+          content: formattedSnapshot
         }
       ]
     });
@@ -43,6 +48,7 @@ ${JSON.stringify(snapshot)}`
       }
     };
 
+    // ✅ 发回分析结果
     await fetch(process.env.RECEIVER_URL || 'https://snapshot-forwarder.vercel.app/api/receive-analysis', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -53,6 +59,11 @@ ${JSON.stringify(snapshot)}`
     return res.status(200).json(result);
   } catch (err) {
     console.error("❌ 分析失败:", err.message);
-    return res.status(500).json({ error: '分析失败', detail: err.message });
+
+    return res.status(500).json({
+      error: '分析失败',
+      detail: err.message,
+      debugHint: '可能是 prompt 中 JSON 格式错误或模型响应结构变化'
+    });
   }
 }
