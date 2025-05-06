@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   const snapshot = req.body;
   console.log("📩 小天才收到快照，准备分析:", snapshot);
 
-  // ✅ 判断是否是整合后的快照结构（放在函数内部）
+  // ✅ 判断是否是合并结构（同时包含多个币种的快照）
   if (!(snapshot.BTCUSDT || snapshot.ETHUSDT || snapshot.SOLUSDT)) {
     console.error("❌ 快照不是合并结构，拒绝执行");
     return res.status(400).json({ error: 'Invalid snapshot structure' });
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
 
   try {
     const chatCompletion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4o', // 你也可以用 'gpt-4'
       messages: [
         { role: 'system', content: strategyPrompt },
         {
