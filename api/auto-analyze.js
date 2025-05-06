@@ -1,6 +1,12 @@
+// ✅ /pages/api/auto-analyze.js
+// 修复了路径问题 + 明确为 Node.js Runtime（避免 Vercel Edge 限制）
+
 import OpenAI from 'openai';
-import { getStrategyPrompt } from '../../lib/brainLoader.js'; // 注意路径是否在 /pages/api 中
-import path from 'path'; // 🔧 确保导入了 path，防止 ReferenceError
+import { getStrategyPrompt } from '../../lib/brainLoader.js';
+
+export const config = {
+  runtime: 'nodejs' // 🔧 强制指定 Node.js 运行环境，确保支持 fs/path 模块
+};
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -50,12 +56,10 @@ ${JSON.stringify(snapshot)}`
       body: JSON.stringify(result)
     });
 
-    console.log("✅ 小天才分析完成:", result.summary.slice(0, 120) + '...');
+    console.log("✅ 小天才分析完成:", summary.slice(0, 120) + '...');
     return res.status(200).json(result);
-
   } catch (err) {
     console.error("❌ 分析失败:", err.message, err.stack);
     return res.status(500).json({ error: '分析失败', detail: err.message });
   }
 }
-
