@@ -1,24 +1,5 @@
 import OpenAI from 'openai';
-import fs from 'fs';
-import path from 'path';
-
-// ✅ 动态加载小天才策略记忆文件
-const memoryPath = path.join(process.cwd(), 'lib', 'xtc_memory.json');
-const memory = JSON.parse(fs.readFileSync(memoryPath, 'utf-8'));
-
-// ✅ 拼接 system prompt（避免写死）
-const strategyPrompt = `
-身份设定：${memory['身份设定']}
-
-【策略规则】
-${Object.entries(memory['策略规则']).map(([key, val]) => `- ${key}：${val}`).join('\n')}
-
-【执行偏好】
-${Object.entries(memory['执行偏好']).map(([key, val]) => `- ${key}：${val}`).join('\n')}
-
-【备注】
-${memory['逻辑备注'].join('；')}
-`;
+import { getStrategyPrompt } from '../lib/brainLoader.js'; // ✅ 引入策略模块
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -32,9 +13,11 @@ export default async function handler(req, res) {
   const snapshot = req.body;
   console.log("📦 小天才收到快照，准备分析:", snapshot);
 
+  const strategyPrompt = getStrategyPrompt(); // ✅ 从记忆动态生成
+
   try {
     const chatCompletion = await openai.chat.completions.create({
-      model: 'gpt-4o', // ✅ 确保为 gpt-4o
+      model: 'gpt-4o',
       messages: [
         {
           role: 'system',
@@ -66,12 +49,7 @@ ${JSON.stringify(snapshot)}`
       body: JSON.stringify(result)
     });
 
-    if (summary && summary !== '⚠️ GPT 没有返回内容') {
-      console.log("✅ 小天才分析完成:", result);
-    } else {
-      console.warn("⚠️ GPT 分析返回为空:", result);
-    }
-
+    console.log("✅ 小天才分析完成:", result);
     return res.status(200).json(result);
   } catch (err) {
     console.error("❌ 分析失败:", err.message);
