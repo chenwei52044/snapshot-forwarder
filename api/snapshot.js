@@ -1,13 +1,19 @@
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method === 'POST') {
-    const data = req.body;
-    console.log('📥 收到快照:', data);
-    res.status(200).json({
-      status: 'received',
-      snapshot: data
-    });
+    const snapshot = req.body
+
+    console.log("📡 Received Snapshot:", snapshot)
+
+    // ✅ 转发给小天才
+    await fetch("https://snapshot-forwarder.vercel.app/api/forward-to-gpt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(snapshot)
+    })
+
+    return res.status(200).json({ status: 'received' })
   } else {
-    res.status(405).json({ message: 'Only POST requests allowed' });
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 }
