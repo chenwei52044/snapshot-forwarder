@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   const snapshot = req.body;
   console.log("🧠 小天才收到快照，准备分析：", snapshot);
 
-  // 👉 模拟分析（这里你以后可以替换成调用 ChatGPT API 或本地模型）
+  // 👉 模拟分析逻辑
   const result = {
     summary: "模拟分析完成 ✅",
     timestamp: new Date().toISOString(),
@@ -14,6 +14,13 @@ export default async function handler(req, res) {
   };
 
   console.log("✅ 小天才分析结果：", result);
+
+  // ✅ 把分析结果送回给小天才（这个是关键！）
+  await fetch("https://snapshot-forwarder.vercel.app/api/receive-analysis", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(result)
+  });
 
   return res.status(200).json(result);
 }
