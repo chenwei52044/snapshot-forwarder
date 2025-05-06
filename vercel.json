@@ -1,10 +1,11 @@
-
 {
   "version": 2,
   "builds": [
-    { "src": "api/snapshot.js", "use": "@vercel/node" }
+    { "src": "api/snapshot.js", "use": "@vercel/node" },
+    { "src": "api/forward-to-gpt.js", "use": "@vercel/node" }
   ],
   "routes": [
-    { "src": "/api/snapshot", "dest": "api/snapshot.js" }
+    { "src": "/api/snapshot", "dest": "api/snapshot.js" },
+    { "src": "/api/forward-to-gpt", "dest": "api/forward-to-gpt.js" }
   ]
 }
