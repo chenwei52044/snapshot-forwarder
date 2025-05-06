@@ -47,3 +47,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'GPT analysis failed' });
   }
 }
+console.log("📥 收到分析结果转发:", new Date().toISOString(), result.summary?.slice(0, 30));
