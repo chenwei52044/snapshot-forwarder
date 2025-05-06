@@ -6,7 +6,8 @@ export default async function handler(req, res) {
     console.log("📡 Received Snapshot:", snapshot)
 
     // ✅ 转发给小天才
-    await fetch("https://snapshot-forwarder.vercel.app/api/forward-to-gpt", {
+    await fetch("https://snapshot-forwarder.vercel.app/api/auto-analyze", {
+
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(snapshot)
