@@ -6,6 +6,7 @@
   "routes": [
     { "src": "/api/snapshot", "dest": "api/snapshot.js" },
     { "src": "/api/forward-to-gpt", "dest": "api/forward-to-gpt.js" },
-    { "src": "/api/auto-analyze", "dest": "api/auto-analyze.js" }
+    { "src": "/api/auto-analyze", "dest": "api/auto-analyze.js" },
+    { "src": "/api/receive-analysis", "dest": "api/receive-analysis.js" }
   ]
 }
