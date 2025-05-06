@@ -1,37 +1,28 @@
 import fs from 'fs';
 import path from 'path';
 
-const memoryFilePath = path.join(process.cwd(), 'lib', 'xtc_memory.json');
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: '只支持 POST 请求' });
-  }
-
-  const { key, value } = req.body;
-
-  if (!key || typeof value !== 'string') {
-    return res.status(400).json({ error: '参数错误，需提供 key 和 string 类型的 value' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const data = JSON.parse(fs.readFileSync(memoryFilePath, 'utf-8'));
+    const updates = req.body;
+    const memoryPath = path.join(process.cwd(), 'lib', 'xtc_memory.json');
 
-    const keyPath = key.split('.');
-    let target = data;
+    // 读取原始记忆
+    const memory = JSON.parse(fs.readFileSync(memoryPath, 'utf-8'));
 
-    for (let i = 0; i < keyPath.length - 1; i++) {
-      if (!target[keyPath[i]]) target[keyPath[i]] = {};
-      target = target[keyPath[i]];
-    }
+    // 合并新记忆（覆盖式合并）
+    const updated = { ...memory, ...updates };
 
-    target[keyPath[keyPath.length - 1]] = value;
+    // 写入新内容
+    fs.writeFileSync(memoryPath, JSON.stringify(updated, null, 2), 'utf-8');
 
-    fs.writeFileSync(memoryFilePath, JSON.stringify(data, null, 2), 'utf-8');
-
-    res.status(200).json({ success: true, updated: { key, value } });
+    console.log('🧠 小天才记忆更新成功:', updates);
+    return res.status(200).json({ message: '记忆已更新', updated });
   } catch (err) {
-    console.error("更新记忆失败:", err);
-    res.status(500).json({ error: '更新记忆失败', detail: err.message });
+    console.error('❌ 更新记忆失败:', err.message);
+    return res.status(500).json({ error: '更新失败', detail: err.message });
   }
 }
