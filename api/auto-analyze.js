@@ -10,11 +10,11 @@ export default async function handler(req, res) {
   }
 
   const snapshot = req.body;
-  console.log("📦 小天才收到快照，准备分析: ", snapshot);
+  console.log("📦 小天才收到快照，准备分析:", snapshot);
 
   try {
     const chatCompletion = await openai.chat.completions.create({
-      model: 'gpt-4o', // 可改为 'gpt-3.5-turbo'
+      model: 'gpt-4o', // 可替换为 'gpt-3.5-turbo' 或 'gpt-4.0-2024-05-13' 等具体版本
       messages: [
         {
           role: 'system',
@@ -27,24 +27,35 @@ export default async function handler(req, res) {
       ]
     });
 
-    const summary = chatCompletion.choices[0].message.content;
+    const summary = chatCompletion.choices?.[0]?.message?.content || '⚠️ GPT 没有返回内容';
 
     const result = {
       summary,
       timestamp: new Date().toISOString(),
-      raw: snapshot
+      raw: {
+        ...snapshot,
+        gpt_output: summary  // 👈 新增字段，用于记录 GPT 返回内容
+      }
     };
 
+    // 发送分析结果到接收端
     await fetch(process.env.RECEIVER_URL || 'https://snapshot-forwarder.vercel.app/api/receive-analysis', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(result)
     });
 
-    console.log("✅ 小天才分析并发送成功:", result);
+    // 日志输出
+    if (summary && summary !== '⚠️ GPT 没有返回内容') {
+      console.log("✅ 小天才分析完成:", result);
+    } else {
+      console.warn("⚠️ GPT 分析返回为空:", result);
+    }
+
     return res.status(200).json(result);
   } catch (err) {
     console.error("❌ 分析失败:", err.message);
     return res.status(500).json({ error: '分析失败', detail: err.message });
   }
 }
+
